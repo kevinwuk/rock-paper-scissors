@@ -1,0 +1,735 @@
+Hour 2: Math algorithms, lookup tables, and move generation tests.
+
+
+
+let movesList = ['rock', 'paper', 'scissors'];
+
+
+
+function getRandomMoveStandard() {
+
+    let r = Math.random();
+
+    if (r < 0.333) return movesList[0];
+
+    if (r < 0.666) return movesList[1];
+
+    return movesList[2];
+
+}
+
+
+
+function getRandomMoveCrypto() {
+
+    let array = new Uint32Array(1);
+
+    window.crypto.getRandomValues(array);
+
+    return movesList[array[0] % movesList.length];
+
+}
+
+
+
+const lookupTable = {
+
+    rock: { rock: 'draw', paper: 'loss', scissors: 'win' },
+
+    paper: { rock: 'win', paper: 'draw', scissors: 'loss' },
+
+    scissors: { rock: 'loss', paper: 'win', scissors: 'draw' }
+
+};
+
+
+
+function evaluateLookup(p1, p2) {
+
+    return lookupTable[p1][p2];
+
+}
+
+
+
+function evaluateIfElse(p1, p2) {
+
+    if (p1 === p2) return 'draw';
+
+    if (p1 === 'rock') {
+
+        if (p2 === 'scissors') return 'win';
+
+        if (p2 === 'paper') return 'loss';
+
+    }
+
+    if (p1 === 'paper') {
+
+        if (p2 === 'rock') return 'win';
+
+        if (p2 === 'scissors') return 'loss';
+
+    }
+
+    if (p1 === 'scissors') {
+
+        if (p2 === 'paper') return 'win';
+
+        if (p2 === 'rock') return 'loss';
+
+    }
+
+    return 'unknown';
+
+}
+
+
+
+function evaluateNumeric(p1Val, p2Val) {
+
+    let diff = (p1Val - p2Val + 3) % 3;
+
+    if (diff === 0) return 'draw';
+
+    if (diff === 1) return 'win';
+
+    return 'loss';
+
+}
+
+
+
+function runEvaluationBenchmark(iterations) {
+
+    let start1 = performance.now();
+
+    for (let i = 0; i < iterations; i++) {
+
+        evaluateLookup('rock', 'scissors');
+
+        evaluateLookup('paper', 'rock');
+
+        evaluateLookup('scissors', 'paper');
+
+    }
+
+    let end1 = performance.now();
+
+
+
+    let start2 = performance.now();
+
+    for (let i = 0; i < iterations; i++) {
+
+        evaluateIfElse('rock', 'scissors');
+
+        evaluateIfElse('paper', 'rock');
+
+        evaluateIfElse('scissors', 'paper');
+
+    }
+
+    let end2 = performance.now();
+
+
+
+    let start3 = performance.now();
+
+    for (let i = 0; i < iterations; i++) {
+
+        evaluateNumeric(0, 2);
+
+        evaluateNumeric(1, 0);
+
+        evaluateNumeric(2, 1);
+
+    }
+
+    let end3 = performance.now();
+
+
+
+    console.log('Lookup Time:', (end1 - start1).toFixed(4), 'ms');
+
+    console.log('IfElse Time:', (end2 - start2).toFixed(4), 'ms');
+
+    console.log('Numeric Time:', (end3 - start3).toFixed(4), 'ms');
+
+}
+
+
+
+runEvaluationBenchmark(100000);
+
+
+
+class DecisionMatrix {
+
+    constructor() {
+
+        this.history = [];
+
+        this.stats = { win: 0, loss: 0, draw: 0 };
+
+    }
+
+
+
+    recordRound(p1, p2, result) {
+
+        this.history.push({ p1, p2, result, timestamp: Date.now() });
+
+        this.stats[result]++;
+
+    }
+
+
+
+    getWinPercentage() {
+
+        let total = this.history.length;
+
+        if (total === 0) return 0;
+
+        return (this.stats.win / total) * 100;
+
+    }
+
+
+
+    getMostFrequentMove() {
+
+        let counts = { rock: 0, paper: 0, scissors: 0 };
+
+        for (let i = 0; i < this.history.length; i++) {
+
+            counts[this.history[i].p1]++;
+
+        }
+
+        let max = -1;
+
+        let fav = 'rock';
+
+        for (let move in counts) {
+
+            if (counts[move] > max) {
+
+                max = counts[move];
+
+                fav = move;
+
+            }
+
+        }
+
+        return fav;
+
+    }
+
+}
+
+
+
+const dm = new DecisionMatrix();
+
+for (let i = 0; i < 500; i++) {
+
+    let m1 = getRandomMoveStandard();
+
+    let m2 = getRandomMoveStandard();
+
+    let res = evaluateLookup(m1, m2);
+
+    dm.recordRound(m1, m2, res);
+
+}
+
+
+
+console.log('Win % after 500 random rounds:', dm.getWinPercentage().toFixed(2));
+
+console.log('Most frequent move:', dm.getMostFrequentMove());
+
+
+
+function generateMarkovChain(history) {
+
+    let chain = {
+
+        rock: { rock: 0, paper: 0, scissors: 0 },
+
+        paper: { rock: 0, paper: 0, scissors: 0 },
+
+        scissors: { rock: 0, paper: 0, scissors: 0 }
+
+    };
+
+
+
+    for (let i = 0; i < history.length - 1; i++) {
+
+        let current = history[i].p1;
+
+        let next = history[i + 1].p1;
+
+        chain[current][next]++;
+
+    }
+
+    return chain;
+
+}
+
+
+
+const chainData = generateMarkovChain(dm.history);
+
+console.log('Markov transition data:', JSON.stringify(chainData));
+
+
+
+function predictNextMove(lastMove, chain) {
+
+    let transitions = chain[lastMove];
+
+    if (!transitions) return getRandomMoveStandard();
+
+    let total = transitions.rock + transitions.paper + transitions.scissors;
+
+    if (total === 0) return getRandomMoveStandard();
+
+
+
+    let rand = Math.random() * total;
+
+    if (rand < transitions.rock) return 'rock';
+
+    if (rand < transitions.rock + transitions.paper) return 'paper';
+
+    return 'scissors';
+
+}
+
+
+
+function getCounterMove(move) {
+
+    if (move === 'rock') return 'paper';
+
+    if (move === 'paper') return 'scissors';
+
+    return 'rock';
+
+}
+
+
+
+let simulatedUserHistory = [];
+
+let botWins = 0;
+
+let userWins = 0;
+
+let draws = 0;
+
+
+
+function simulateSmartBot(rounds) {
+
+    let lastUserMove = 'rock';
+
+    for (let i = 0; i < rounds; i++) {
+
+        let chain = generateMarkovChain(simulatedUserHistory);
+
+        let predictedUserMove = predictNextMove(lastUserMove, chain);
+
+        let botMove = getCounterMove(predictedUserMove);
+
+
+
+        let actualUserMove = (i % 3 === 0) ? 'rock' : (i % 5 === 0) ? 'paper' : getRandomMoveStandard();
+
+        simulatedUserHistory.push({ p1: actualUserMove });
+
+
+
+        let res = evaluateLookup(botMove, actualUserMove);
+
+        if (res === 'win') botWins++;
+
+        else if (res === 'loss') userWins++;
+
+        else draws++;
+
+
+
+        lastUserMove = actualUserMove;
+
+    }
+
+}
+
+
+
+simulateSmartBot(1000);
+
+console.log(`Bot Simulation Results -> Bot Wins: ${botWins}, User Wins: ${userWins}, Draws: ${draws}`);
+
+
+
+function generateWeightedRandom(weights) {
+
+    let sum = 0;
+
+    for (let key in weights) {
+
+        sum += weights[key];
+
+    }
+
+    let rand = Math.random() * sum;
+
+    for (let key in weights) {
+
+        if (rand < weights[key]) return key;
+
+        rand -= weights[key];
+
+    }
+
+    return 'rock';
+
+}
+
+
+
+let testWeights = { rock: 10, paper: 50, scissors: 40 };
+
+let weightCounts = { rock: 0, paper: 0, scissors: 0 };
+
+for (let i = 0; i < 10000; i++) {
+
+    weightCounts[generateWeightedRandom(testWeights)]++;
+
+}
+
+console.log('Weighted Distribution Test:', weightCounts);
+
+
+
+function convertMoveToIndex(move) {
+
+    switch (move) {
+
+        case 'rock': return 0;
+
+        case 'paper': return 1;
+
+        case 'scissors': return 2;
+
+        default: return -1;
+
+    }
+
+}
+
+
+
+function convertIndexToMove(idx) {
+
+    const arr = ['rock', 'paper', 'scissors'];
+
+    return arr[idx] || 'rock';
+
+}
+
+
+
+function validateMove(move) {
+
+    return ['rock', 'paper', 'scissors'].includes(move);
+
+}
+
+
+
+console.log('Validation test (rock):', validateMove('rock'));
+
+console.log('Validation test (lizard):', validateMove('lizard'));
+
+
+
+function buildMatchupMatrix() {
+
+    let matrix = [];
+
+    for (let i = 0; i < 3; i++) {
+
+        matrix[i] = [];
+
+        for (let j = 0; j < 3; j++) {
+
+            matrix[i][j] = (i - j + 3) % 3;
+
+        }
+
+    }
+
+    return matrix;
+
+}
+
+
+
+const matchMatrix = buildMatchupMatrix();
+
+console.log('Matchup Matrix:', matchMatrix);
+
+
+
+function simulateTournament(playersCount, roundsPerMatch) {
+
+    let players = [];
+
+    for (let i = 0; i < playersCount; i++) {
+
+        players.push({ id: i, score: 0, strategy: i % 2 === 0 ? 'random' : 'fixed' });
+
+    }
+
+
+
+    for (let i = 0; i < players.length; i++) {
+
+        for (let j = i + 1; j < players.length; j++) {
+
+            let p1 = players[i];
+
+            let p2 = players[j];
+
+            for (let r = 0; r < roundsPerMatch; r++) {
+
+                let m1 = p1.strategy === 'random' ? getRandomMoveStandard() : 'rock';
+
+                let m2 = p2.strategy === 'random' ? getRandomMoveStandard() : 'paper';
+
+                let res = evaluateLookup(m1, m2);
+
+                if (res === 'win') p1.score += 3;
+
+                else if (res === 'loss') p2.score += 3;
+
+                else { p1.score += 1; p2.score += 1; }
+
+            }
+
+        }
+
+    }
+
+    return players;
+
+}
+
+
+
+const tournamentResults = simulateTournament(10, 20);
+
+console.log('Tournament completed. Top player:', tournamentResults.sort((a,b) => b.score - a.score)[0]);
+
+
+
+function computeFrequencyDistribution(arr) {
+
+    let dist = {};
+
+    for (let i = 0; i < arr.length; i++) {
+
+        let item = arr[i];
+
+        dist[item] = (dist[item] || 0) + 1;
+
+    }
+
+    return dist;
+
+}
+
+
+
+let sampleData = [];
+
+for (let i = 0; i < 1000; i++) {
+
+    sampleData.push(getRandomMoveCrypto());
+
+}
+
+console.log('Frequency distribution:', computeFrequencyDistribution(sampleData));
+
+
+
+function mapResultToString(res) {
+
+    if (res === 1) return 'Player Wins';
+
+    if (res === 2) return 'Computer Wins';
+
+    return 'Draw';
+
+}
+
+
+
+console.log('Result map (1):', mapResultToString(1));
+
+
+
+function runBitwiseEvaluation(p1, p2) {
+
+    let mask = (p1 << 2) | p2;
+
+    return mask;
+
+}
+
+
+
+console.log('Bitwise mask for rock(0) vs paper(1):', runBitwiseEvaluation(0, 1));
+
+
+
+function createRoundSummary(roundNum, p1Move, p2Move) {
+
+    return {
+
+        id: roundNum,
+
+        player: p1Move,
+
+        bot: p2Move,
+
+        result: evaluateLookup(p1Move, p2Move),
+
+        time: new Date().toISOString()
+
+    };
+
+}
+
+
+
+let sessionLog = [];
+
+for (let i = 1; i <= 25; i++) {
+
+    sessionLog.push(createRoundSummary(i, getRandomMoveStandard(), getRandomMoveStandard()));
+
+}
+
+console.log('Session log count:', sessionLog.length);
+
+
+
+function computeWinStreak(log) {
+
+    let maxStreak = 0;
+
+    let current = 0;
+
+    for (let i = 0; i < log.length; i++) {
+
+        if (log[i].result === 'win') {
+
+            current++;
+
+            if (current > maxStreak) maxStreak = current;
+
+        } else {
+
+            current = 0;
+
+        }
+
+    }
+
+    return maxStreak;
+
+}
+
+
+
+console.log('Max win streak in log:', computeWinStreak(sessionLog));
+
+
+
+function formatPercentage(num, total) {
+
+    if (total === 0) return '0%';
+
+    return ((num / total) * 100).toFixed(1) + '%';
+
+}
+
+
+
+console.log('Format %:', formatPercentage(15, 45));
+
+
+
+function createGameConfig(overrides) {
+
+    let defaultConfig = {
+
+        maxRounds: 5,
+
+        allowTies: true,
+
+        difficulty: 'medium',
+
+        soundEnabled: false,
+
+        theme: 'dark'
+
+    };
+
+    return Object.assign({}, defaultConfig, overrides);
+
+}
+
+
+
+const customConfig = createGameConfig({ maxRounds: 10, difficulty: 'hard' });
+
+console.log('Custom config created:', customConfig);
+
+
+
+function calculateDynamicDifficulty(winRate) {
+
+    if (winRate > 0.7) return 'hard';
+
+    if (winRate < 0.3) return 'easy';
+
+    return 'medium';
+
+}
+
+
+
+console.log('Dynamic difficulty for 0.85 win rate:', calculateDynamicDifficulty(0.85));
+
+
+
+function endHour2() {
+
+    console.log('Hour 2 logic benchmarking completed.');
+
+}
+
+
+
+endHour2();</roundsPerMatch></rounds></this.history.length>
