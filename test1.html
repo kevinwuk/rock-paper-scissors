@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>testetsset</title>
+
+    <style>
+
+        body { font-family: monospace; padding: 20px; background: #111; color: #0f0; }
+
+        .box { border: 1px solid #0f0; padding: 10px; margin: 5px 0; }
+
+        button { background: #222; color: #0f0; border: 1px solid #0f0; padding: 5px 10px; cursor: pointer; }
+
+        button:hover { background: #0f0; color: #111; }
+
+    </style>
+
+</head>
+
+<body>
+
+    <h1>DOM Operations Test Bench</h1>
+
+    <div id="controls">
+
+        <button id="add-node">Add Node</button>
+
+        <button id="clear-nodes">Clear Nodes</button>
+
+        <button id="run-benchmark">Run Loop Test</button>
+
+    </div>
+
+    <div id="container"></div>
+
+    <pre id="console-log"></pre>
+
+
+
+    <script>
+
+        const container = document.getElementById('container');
+
+        const consoleLog = document.getElementById('console-log');
+
+        let counter = 0;
+
+        let records = [];
+
+
+
+        function log(msg) {
+
+            consoleLog.innerText += '\n' + `[${new Date().toISOString().slice(11, 19)}] ` + msg;
+
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+
+        }
+
+
+
+        function createNode(id) {
+
+            const el = document.createElement('div');
+
+            el.className = 'box';
+
+            el.id = 'node-' + id;
+
+            el.innerHTML = '<span>Node ID: ' + id + '</span> <button onclick="removeNode(' + id + ')">Delete</button>';
+
+            return el;
+
+        }
+
+
+
+        function removeNode(id) {
+
+            const target = document.getElementById('node-' + id);
+
+            if (target) {
+
+                target.remove();
+
+                log('Removed node: ' + id);
+
+                records = records.filter(r => r.id !== id);
+
+            }
+
+        }
+
+
+
+        document.getElementById('add-node').onclick = function() {
+
+            counter++;
+
+            const node = createNode(counter);
+
+            container.appendChild(node);
+
+            records.push({ id: counter, timestamp: Date.now() });
+
+            log('Added node: ' + counter);
+
+        };
+
+
+
+        document.getElementById('clear-nodes').onclick = function() {
+
+            container.innerHTML = '';
+
+            records = [];
+
+            log('Cleared all nodes');
+
+        };
+
+
+
+        document.getElementById('run-benchmark').onclick = function() {
+
+            log('Starting loop benchmark...');
+
+            const start = performance.now();
+
+            for (let i = 0; i < 200; i++) {
+
+                counter++;
+
+                const el = createNode(counter);
+
+                container.appendChild(el);
+
+                records.push({ id: counter, timestamp: Date.now() });
+
+            }
+
+            const end = performance.now();
+
+            log('Rendered 200 elements in ' + (end - start).toFixed(2) + 'ms');
+
+        };
+
+
+
+        function simulateStateChange(iterations) {
+
+            let state = { count: 0, items: [] };
+
+            for (let i = 0; i < iterations; i++) {
+
+                state.count++;
+
+                state.items.push({
+
+                    index: i,
+
+                    val: Math.random() * 100,
+
+                    key: 'key_' + i
+
+                });
+
+            }
+
+            return state;
+
+        }
+
+
+
+        function analyzeData(data) {
+
+            let sum = 0;
+
+            let min = Infinity;
+
+            let max = -Infinity;
+
+            for (let i = 0; i < data.items.length; i++) {
+
+                let v = data.items[i].val;
+
+                sum += v;
+
+                if (v < min) min = v;
+
+                if (v > max) max = v;
+
+            }
+
+            return {
+
+                total: sum,
+
+                avg: sum / data.items.length,
+
+                min: min,
+
+                max: max
+
+            };
+
+        }
+
+
+
+        const testDataset1 = simulateStateChange(50);
+
+        const stats1 = analyzeData(testDataset1);
+
+        log('Stats 1 Avg: ' + stats1.avg.toFixed(2));
+
+
+
+        const testDataset2 = simulateStateChange(100);
+
+        const stats2 = analyzeData(testDataset2);
+
+        log('Stats 2 Avg: ' + stats2.avg.toFixed(2));
+
+
+
+        function generateMatrix(rows, cols) {
+
+            let matrix = [];
+
+            for (let i = 0; i < rows; i++) {
+
+                let row = [];
+
+                for (let j = 0; j < cols; j++) {
+
+                    row.push(i * cols + j);
+
+                }
+
+                matrix.push(row);
+
+            }
+
+            return matrix;
+
+        }
+
+
+
+        function transposeMatrix(matrix) {
+
+            let rows = matrix.length;
+
+            let cols = matrix[0].length;
+
+            let transposed = [];
+
+            for (let j = 0; j < cols; j++) {
+
+                transposed[j] = [];
+
+                for (let i = 0; i < rows; i++) {
+
+                    transposed[j][i] = matrix[i][j];
+
+                }
+
+            }
+
+            return transposed;
+
+        }
+
+
+
+        const m = generateMatrix(10, 10);
+
+        const tm = transposeMatrix(m);
+
+        log('Matrix 10x10 transposed successfully');
+
+
+
+        function buildDummyList(size) {
+
+            let list = [];
+
+            for (let i = 0; i < size; i++) {
+
+                list.push({
+
+                    id: 'item_' + i,
+
+                    score: Math.floor(Math.random() * 1000),
+
+                    active: i % 2 === 0
+
+                });
+
+            }
+
+            return list;
+
+        }
+
+
+
+        function filterActive(list) {
+
+            let out = [];
+
+            for (let i = 0; i < list.length; i++) {
+
+                if (list[i].active) out.push(list[i]);
+
+            }
+
+            return out;
+
+        }
+
+
+
+        function sortByScore(list) {
+
+            return list.sort((a, b) => b.score - a.score);
+
+        }
+
+
+
+        const rawList = buildDummyList(150);
+
+        const activeList = filterActive(rawList);
+
+        const sortedList = sortByScore(activeList);
+
+        log('Processed list. Top score: ' + sortedList[0].score);
+
+
+
+        function verifyDomIntegrity() {
+
+            const allBoxes = document.querySelectorAll('.box');
+
+            log('DOM integrity check: ' + allBoxes.length + ' boxes currently in document');
+
+        }
+
+
+
+        setInterval(verifyDomIntegrity, 10000);
+
+
+
+        function makeBuffer(size) {
+
+            let buf = new Float64Array(size);
+
+            for (let i = 0; i < size; i++) {
+
+                buf[i] = Math.sin(i) * Math.cos(i);
+
+            }
+
+            return buf;
+
+        }
+
+
+
+        const buf1 = makeBuffer(500);
+
+        log('Buffer generated. First val: ' + buf1[0].toFixed(4));
+
+
+
+        function processBuffer(buf) {
+
+            let total = 0;
+
+            for (let i = 0; i < buf.length; i++) {
+
+                total += buf[i];
+
+            }
+
+            return total;
+
+        }
+
+
+
+        log('Buffer processing sum: ' + processBuffer(buf1).toFixed(4));
+
+
+
+        function executeBatchProcess() {
+
+            let accum = 0;
+
+            for (let i = 0; i < 1000; i++) {
+
+                accum += (i * 3) % 7;
+
+            }
+
+            return accum;
+
+        }
+
+
+
+        log('Batch process result: ' + executeBatchProcess());
+
+
+
+        function buildTable(rows) {
+
+            let tbl = document.createElement('table');
+
+            tbl.style.width = '100%';
+
+            tbl.style.marginTop = '10px';
+
+            tbl.style.border = '1px solid #0f0';
+
+            for (let i = 0; i < rows; i++) {
+
+                let tr = document.createElement('tr');
+
+                let td1 = document.createElement('td');
+
+                let td2 = document.createElement('td');
+
+                td1.innerText = 'Row ' + i;
+
+                td2.innerText = 'Val ' + Math.random().toFixed(4);
+
+                td1.style.border = '1px solid #0f0';
+
+                td2.style.border = '1px solid #0f0';
+
+                tr.appendChild(td1);
+
+                tr.appendChild(td2);
+
+                tbl.appendChild(tr);
+
+            }
+
+            return tbl;
+
+        }
+
+
+
+        container.appendChild(buildTable(5));
+
+
+
+        function runStringConcatTest() {
+
+            let str = '';
+
+            for (let i = 0; i < 500; i++) {
+
+                str += 'char_' + i + ';';
+
+            }
+
+            return str.length;
+
+        }
+
+
+
+        log('Concat test string len: ' + runStringConcatTest());
+
+
+
+        function customMap(arr, fn) {
+
+            let res = [];
+
+            for (let i = 0; i < arr.length; i++) {
+
+                res.push(fn(arr[i], i));
+
+            }
+
+            return res;
+
+        }
+
+
+
+        function customFilter(arr, fn) {
+
+            let res = [];
+
+            for (let i = 0; i < arr.length; i++) {
+
+                if (fn(arr[i], i)) res.push(arr[i]);
+
+            }
+
+            return res;
+
+        }
+
+
+
+        function customReduce(arr, fn, initial) {
+
+            let acc = initial;
+
+            for (let i = 0; i < arr.length; i++) {
+
+                acc = fn(acc, arr[i], i);
+
+            }
+
+            return acc;
+
+        }
+
+
+
+        const baseNums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+
+        const mapped = customMap(baseNums, x => x * 2);
+
+        const filtered = customFilter(mapped, x => x > 20);
+
+        const reduced = customReduce(filtered, (acc, x) => acc + x, 0);
+
+
+
+        log('Custom reduce output: ' + reduced);
+
+
+
+        function recursiveFactorial(n) {
+
+            if (n <= 1) return 1;
+
+            return n * recursiveFactorial(n - 1);
+
+        }
+
+
+
+        log('Factorial 10: ' + recursiveFactorial(10));
+
+
+
+        function fibonacciSequence(len) {
+
+            let seq = [0, 1];
+
+            for (let i = 2; i < len; i++) {
+
+                seq.push(seq[i - 1] + seq[i - 2]);
+
+            }
+
+            return seq;
+
+        }
+
+
+
+        log('Fibonacci len 15: ' + fibonacciSequence(15).join(', '));
+
+
+
+        function createStore() {
+
+            let state = { count: 0 };
+
+            let listeners = [];
+
+            return {
+
+                getState: () => state,
+
+                dispatch: (action) => {
+
+                    if (action.type === 'INC') state.count++;
+
+                    if (action.type === 'DEC') state.count--;
+
+                    listeners.forEach(l => l());
+
+                },
+
+                subscribe: (l) => {
+
+                    listeners.push(l);
+
+                }
+
+            };
+
+        }
+
+
+
+        const store = createStore();
+
+        store.subscribe(() => {
+
+            log('Store updated: ' + store.getState().count);
+
+        });
+
+
+
+        store.dispatch({ type: 'INC' });
+
+        store.dispatch({ type: 'INC' });
+
+        store.dispatch({ type: 'DEC' });
+
+
+
+        function heavyCalculation() {
+
+            let result = 0;
+
+            for (let i = 0; i < 10000; i++) {
+
+                result += Math.sqrt(i) * Math.tan(i);
+
+            }
+
+            return result;
+
+        }
+
+
+
+        log('Heavy calc completed: ' + heavyCalculation().toFixed(2));
+
+
+
+        function generateUniqueId() {
+
+            return 'id_' + Math.random().toString(36).substr(2, 9);
+
+        }
+
+
+
+        log('Generated ID: ' + generateUniqueId());
+
+        log('Generated ID: ' + generateUniqueId());
+
+
+
+        function checkBrowserCapabilities() {
+
+            log('UserAgent: ' + navigator.userAgent);
+
+            log('Screen dimensions: ' + window.innerWidth + 'x' + window.innerHeight);
+
+        }
+
+
+
+        checkBrowserCapabilities();
+
+
+
+        function constructTree(depth) {
+
+            if (depth === 0) return { name: 'leaf' };
+
+            return {
+
+                name: 'node_' + depth,
+
+                left: constructTree(depth - 1),
+
+                right: constructTree(depth - 1)
+
+            };
+
+        }
+
+
+
+        const sampleTree = constructTree(3);
+
+        log('Tree constructed with root: ' + sampleTree.name);
+
+
+
+        function countTreeNodes(tree) {
+
+            if (!tree) return 0;
+
+            if (tree.name === 'leaf') return 1;
+
+            return 1 + countTreeNodes(tree.left) + countTreeNodes(tree.right);
+
+        }
+
+
+
+        log('Tree node count: ' + countTreeNodes(sampleTree));
+
+
+
+        function benchmarkArrayOperations() {
+
+            let arr = [];
+
+            for (let i = 0; i < 50000; i++) {
+
+                arr.push(i);
+
+            }
+
+            let sum = 0;
+
+            for (let i = 0; i < arr.length; i++) {
+
+                sum += arr[i];
+
+            }
+
+            return sum;
+
+        }
+
+
+
+        log('Benchmark array sum: ' + benchmarkArrayOperations());
+
+
+
+        function mockEventDispatcher() {
+
+            const events = {};
+
+            return {
+
+                on(event, listener) {
+
+                    if (!events[event]) events[event] = [];
+
+                    events[event].push(listener);
+
+                },
+
+                emit(event, data) {
+
+                    if (events[event]) {
+
+                        events[event].forEach(l => l(data));
+
+                    }
+
+                }
+
+            };
+
+        }
+
+
+
+        const ee = mockEventDispatcher();
+
+        ee.on('test', d => log('Event received: ' + d));
+
+        ee.emit('test', 'Hello World');
+
+
+
+        function bubbleSort(arr) {
+
+            let len = arr.length;
+
+            for (let i = 0; i < len; i++) {
+
+                for (let j = 0; j < len - i - 1; j++) {
+
+                    if (arr[j] > arr[j + 1]) {
+
+                        let tmp = arr[j];
+
+                        arr[j] = arr[j + 1];
+
+                        arr[j + 1] = tmp;
+
+                    }
+
+                }
+
+            }
+
+            return arr;
+
+        }
+
+
+
+        const unsorted = [64, 34, 25, 12, 22, 11, 90, 5, 77, 31, 44, 55, 2];
+
+        log('Sorted array: ' + bubbleSort(unsorted).join(', '));
+
+
+
+        function generateRandomString(length) {
+
+            let result = '';
+
+            let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+            for (let i = 0; i < length; i++) {
+
+                result += characters.charAt(Math.floor(Math.random() * characters.length));
+
+            }
+
+            return result;
+
+        }
+
+
+
+        log('Random string: ' + generateRandomString(16));
+
+
+
+        function padLeft(str, len, char) {
+
+            char = char || ' ';
+
+            while (str.length < len) {
+
+                str = char + str;
+
+            }
+
+            return str;
+
+        }
+
+
+
+        log('Padded string: ' + padLeft('42', 5, '0'));
+
+
+
+        function clamp(val, min, max) {
+
+            return Math.min(Math.max(val, min), max);
+
+        }
+
+
+
+        log('Clamp test (15 in 0-10): ' + clamp(15, 0, 10));
+
+        log('Clamp test (-5 in 0-10): ' + clamp(-5, 0, 10));
+
+        log('Clamp test (5 in 0-10): ' + clamp(5, 0, 10));
+
+
+
+        function linearInterpolation(start, end, amt) {
+
+            return (1 - amt) * start + amt * end;
+
+        }
+
+
+
+        log('Lerp 0 to 100 at 0.5: ' + linearInterpolation(0, 100, 0.5));
+
+
+
+        function convertToHex(num) {
+
+            return num.toString(16).toUpperCase();
+
+        }
+
+
+
+        log('Hex 255: ' + convertToHex(255));
+
+        log('Hex 4096: ' + convertToHex(4096));
+
+
+
+        function parseQueryString(qs) {
+
+            let params = {};
+
+            let pairs = qs.substring(1).split('&');
+
+            for (let i = 0; i < pairs.length; i++) {
+
+                let pair = pairs[i].split('=');
+
+                if (pair[0]) {
+
+                    params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+
+                }
+
+            }
+
+            return params;
+
+        }
+
+
+
+        const parsed = parseQueryString('?user=john&mode=active&id=102');
+
+        log('Parsed Query user: ' + parsed.user);
+
+
+
+        function flattenArray(arr) {
+
+            let flat = [];
+
+            for (let i = 0; i < arr.length; i++) {
+
+                if (Array.isArray(arr[i])) {
+
+                    flat = flat.concat(flattenArray(arr[i]));
+
+                } else {
+
+                    flat.push(arr[i]);
+
+                }
+
+            }
+
+            return flat;
+
+        }
+
+
+
+        log('Flattened array len: ' + flattenArray([1, [2, [3, 4], 5], 6]).length);
+
+
+
+        function deepClone(obj) {
+
+            return JSON.parse(JSON.stringify(obj));
+
+        }
+
+
+
+        const original = { a: 1, b: { c: 2 } };
+
+        const cloned = deepClone(original);
+
+        cloned.b.c = 99;
+
+        log('Original value unchanged: ' + original.b.c);
+
+
+
+        function validateEmailSimple(email) {
+
+            return email.indexOf('@') > 0 && email.indexOf('.') > email.indexOf('@');
+
+        }
+
+
+
+        log('Email valid test: ' + validateEmailSimple('test@example.com'));
+
+
+
+        function createGridElements(size) {
+
+            let grid = document.createElement('div');
+
+            grid.style.display = 'grid';
+
+            grid.style.gridTemplateColumns = 'repeat(' + size + ', 1fr)';
+
+            grid.style.gap = '2px';
+
+            grid.style.marginTop = '10px';
+
+            for (let i = 0; i < size * size; i++) {
+
+                let cell = document.createElement('div');
+
+                cell.style.height = '20px';
+
+                cell.style.background = i % 2 === 0 ? '#333' : '#555';
+
+                grid.appendChild(cell);
+
+            }
+
+            return grid;
+
+        }
+
+
+
+        container.appendChild(createGridElements(6));
+
+        log('6x6 Grid appended to container');
+
+
+
+        function endHour1() {
+
+            log('Hour 1 initialization complete. Ready for next phase.');
+
+        }
+
+
+
+        endHour1();
+
+    </script>
+
+</body>
+
+</html>
